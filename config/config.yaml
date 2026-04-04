@@ -1,0 +1,9 @@
+app:
+  name: diengid-backend
+  prefork: false
+
+web:
+  port: 8088
+
+log:
+  level: 4
