@@ -6,4 +6,23 @@ web:
   port: 8088
 
 log:
-  level: 4
+  level: 8
+
+database:
+  username: postgres
+  password: postgres
+  host: localhost
+  port: 5432
+  name: "db_diengsid"
+  sslmode: "disable"
+  timezone: "Asia/Jakarta"
+  pool:
+    idle: 10
+    max: 100
+    lifetime: 300
+
+mail:
+  host: smtp.gmail.com
+  port: 587
+  username: iddiengs@gmail.com
+  password: "lkpe qqmx degv biip"

@@ -57,7 +57,7 @@ migrate create -ext sql -dir db/migrations create_table_xxx
 ### Run Migration
 
 ```
-migrate -database "postgres://postgres:postgres@localhost:5432/hr_saas?sslmode=disable" -path db/migrations up
+migrate -database "postgres://postgres:postgres@localhost:5432/db_diengsid?sslmode=disable" -path db/migrations up
 ```
 
 ## Run Application

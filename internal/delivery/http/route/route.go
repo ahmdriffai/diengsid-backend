@@ -9,9 +9,18 @@ import (
 type RouteConfig struct {
 	App              *fiber.App
 	HealthController *http.HealthController
+	AuthController   *http.AuthController
 }
 
 func (c RouteConfig) Setup() {
 	c.App.Get("/", c.HealthController.Check)
 	c.App.Get("/api/health", c.HealthController.Check)
+	c.SetupAuth()
+}
+
+func (c RouteConfig) SetupAuth() {
+	auth := c.App.Group("/api/auth")
+	auth.Post("/send-otp", c.AuthController.SendOtp)
+	auth.Post("/verify-otp", c.AuthController.VeriftOtp)
+
 }
