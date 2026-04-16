@@ -9,9 +9,12 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/api/idtoken"
 	"gorm.io/gorm"
 	"id.diengs.backend/internal/entity"
+	"id.diengs.backend/internal/lib"
 	"id.diengs.backend/internal/model"
 	"id.diengs.backend/internal/pkg"
 	"id.diengs.backend/internal/pkg/mailview"
@@ -25,6 +28,8 @@ type AuthUseCase struct {
 	Mail         *pkg.Mail
 	UserRepo     *repository.UserRepo
 	EmailOtpRepo *repository.EmailOtpRepo
+	SessionRepo  *repository.SessionRepo
+	Viper        *viper.Viper
 }
 
 func NewAuthUseCase(
@@ -34,6 +39,8 @@ func NewAuthUseCase(
 	mail *pkg.Mail,
 	userRepo *repository.UserRepo,
 	emailOtpRepo *repository.EmailOtpRepo,
+	sessionRepo *repository.SessionRepo,
+	viper *viper.Viper,
 ) *AuthUseCase {
 	return &AuthUseCase{
 		DB:           db,
@@ -42,6 +49,8 @@ func NewAuthUseCase(
 		Validate:     validate,
 		Mail:         mail,
 		EmailOtpRepo: emailOtpRepo,
+		SessionRepo:  sessionRepo,
+		Viper:        viper,
 	}
 }
 
@@ -95,14 +104,20 @@ func (u *AuthUseCase) SendOtp(ctx context.Context, request *model.AuthSendOtpReq
 }
 
 // Verify Email OTP
-func (u *AuthUseCase) VerifyOtp(ctx context.Context, requet *model.AuthVerifyOtpRequest) error {
+func (u *AuthUseCase) VerifyOtp(ctx context.Context, request *model.AuthVerifyOtpRequest) error {
 	// transaction
 	tx := u.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
+	// validate request
+	if err := u.Validate.Struct(request); err != nil {
+		u.Log.WithError(err).Error("FAILED TO VALIDATE REQUEST.")
+		return fiber.ErrBadRequest
+	}
+
 	// find OTP
 	emailOtp := new(entity.EmailOtp)
-	err := u.EmailOtpRepo.FindActiveAndEmail(tx, emailOtp, requet.Email)
+	err := u.EmailOtpRepo.FindActiveAndEmail(tx, emailOtp, request.Email)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return fiber.ErrNotFound
@@ -115,7 +130,7 @@ func (u *AuthUseCase) VerifyOtp(ctx context.Context, requet *model.AuthVerifyOtp
 		return fiber.NewError(fiber.StatusTooManyRequests, "TO MANY ATTEMPS.")
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(emailOtp.OtpCode), []byte(requet.Otp)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(emailOtp.OtpCode), []byte(request.Otp)); err != nil {
 		u.Log.WithError(err).Error("FAILED TO FIND EMAIL OTP.")
 		return fiber.ErrNotFound
 	}
@@ -134,4 +149,147 @@ func (u *AuthUseCase) VerifyOtp(ctx context.Context, requet *model.AuthVerifyOtp
 	}
 
 	return nil
+}
+
+// Auth with google
+func (u *AuthUseCase) AuthGoogle(ctx context.Context, request *model.AuthGoogleRequest) (*model.AuthResponse, error) {
+	clientId := u.Viper.GetString("google.clientId")
+	// transaction
+	tx := u.DB.WithContext(ctx).Begin()
+	defer tx.Rollback()
+
+	// validate request
+	// validate request
+	if err := u.Validate.Struct(request); err != nil {
+		u.Log.WithError(err).Error("FAILED TO VALIDATE REQUEST.")
+		return nil, fiber.ErrBadRequest
+	}
+
+	// validate token
+	payload, err := idtoken.Validate(ctx, request.Token, clientId)
+	if err != nil {
+		return nil, err
+	}
+
+	email := payload.Claims["email"].(string)
+	name := payload.Claims["name"].(string)
+	picture := payload.Claims["picture"].(string)
+	provider := "google"
+	providerID := payload.Claims["sub"].(string)
+
+	// find user
+	user := new(entity.User)
+	err = u.UserRepo.FindByEmail(tx, user, email)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			// user belum ada → register
+			user = &entity.User{
+				Email:         email,
+				Name:          name,
+				Picture:       &picture,
+				Provider:      &provider,
+				ProviderID:    &providerID,
+				EmailVerified: true,
+				Role:          "USER",
+			}
+			err = u.UserRepo.Create(tx, user)
+			if err != nil {
+				u.Log.WithError(err).Error("FAILED TO CREATE USER.")
+				return nil, fiber.ErrInternalServerError
+			}
+
+		} else {
+			u.Log.WithError(err).Error("FAILED TO FIND EMAIL.")
+			return nil, fiber.ErrInternalServerError
+		}
+	}
+
+	// create token
+	token, err := lib.GenerateToken(32)
+	if err != nil {
+		return nil, fiber.ErrInternalServerError
+	}
+
+	// create session
+	session := &entity.Session{
+		UserID:    user.ID,
+		Token:     token,
+		IPAddress: &request.IP,
+		UserAgent: &request.UserAgent,
+		ExpiredAt: time.Now().Add(24 * time.Hour).UnixMilli(),
+	}
+
+	if err := u.SessionRepo.Create(tx, session); err != nil {
+		u.Log.WithError(err).Error("Failed to create session")
+		return nil, fiber.ErrInternalServerError
+	}
+
+	u.Log.Println("TES")
+
+	if err := tx.Commit().Error; err != nil {
+		u.Log.Warnf("Failed commit transaction : %+v", err)
+		return nil, fiber.ErrInternalServerError
+	}
+
+	return &model.AuthResponse{
+		User:  *model.UserToResponse(user),
+		Token: token,
+	}, nil
+}
+
+// Auth logout
+func (c *AuthUseCase) Logout(ctx context.Context, token string) error {
+	tx := c.DB.WithContext(ctx).Begin()
+	defer tx.Rollback()
+
+	// delete session by user id
+	if err := c.SessionRepo.DeleteByToken(tx, token); err != nil {
+		c.Log.WithError(err).Error("Failed to delete session by token")
+		return fiber.ErrInternalServerError
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		c.Log.Warnf("Failed commit transaction : %+v", err)
+		return fiber.ErrInternalServerError
+	}
+
+	return nil
+}
+
+// Verify User
+func (c *AuthUseCase) Verify(ctx context.Context, request *model.VerifyUserRequest) (*model.UserResponse, error) {
+	tx := c.DB.WithContext(ctx).Begin()
+	defer tx.Rollback()
+
+	// find session
+	session := new(entity.Session)
+	if err := c.SessionRepo.FindByToken(tx, session, request.Token); err != nil {
+		c.Log.Warnf("Failed find user by token : %+v", err)
+		return nil, fiber.ErrUnauthorized
+	}
+
+	expiredAt := time.Unix(session.CreatedAt, 0)
+
+	// Check expiry
+	if expiredAt.Before(time.Now()) {
+		if err := c.SessionRepo.Delete(tx, session); err != nil {
+			c.Log.WithError(err).Error("Failed to delete session by user id")
+			return nil, fiber.ErrInternalServerError
+		}
+		return nil, fiber.NewError(fiber.StatusUnauthorized, "Session expired")
+	}
+
+	// find user
+	user := new(entity.User)
+	if err := c.UserRepo.FindById(tx, user, session.UserID, "Employee"); err != nil {
+		c.Log.Warnf("Failed find user by token : %+v", err)
+		return nil, fiber.ErrUnauthorized
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		c.Log.Warnf("Failed commit transaction : %+v", err)
+		return nil, fiber.ErrInternalServerError
+	}
+
+	return model.UserToResponse(user), nil
 }

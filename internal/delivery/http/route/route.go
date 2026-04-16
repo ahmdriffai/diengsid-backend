@@ -10,6 +10,7 @@ type RouteConfig struct {
 	App              *fiber.App
 	HealthController *http.HealthController
 	AuthController   *http.AuthController
+	AuthMiddleware   fiber.Handler
 }
 
 func (c RouteConfig) Setup() {
@@ -22,5 +23,9 @@ func (c RouteConfig) SetupAuth() {
 	auth := c.App.Group("/api/auth")
 	auth.Post("/send-otp", c.AuthController.SendOtp)
 	auth.Post("/verify-otp", c.AuthController.VeriftOtp)
+	auth.Post("/google", c.AuthController.AuthGoogle)
+	auth.Delete("/_logout", c.AuthController.Logout)
 
+	loggedRoute := auth.Group("/", c.AuthMiddleware)
+	loggedRoute.Get("/_current", c.AuthController.Current)
 }

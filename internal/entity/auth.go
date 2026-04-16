@@ -8,14 +8,15 @@ import (
 )
 
 type User struct {
-	ID            string `gorm:"column:id;primaryKey"`
-	Name          string `gorm:"column:name;not null"`
-	Email         string `gorm:"column:email;uniqueIndex;not null"`
-	EmailVerified bool   `gorm:"column:email_verified;default:false"`
-	Image         *string
-	CompanyID     string `gorm:"column:company_id"`
-	Role          string `gorm:"column:role;not null"`
-	Password      string `gorm:"column:password;not null"`
+	ID            string  `gorm:"column:id;primaryKey"`
+	Name          string  `gorm:"column:name;not null"`
+	Email         string  `gorm:"column:email;uniqueIndex;not null"`
+	EmailVerified bool    `gorm:"column:email_verified;default:false"`
+	Picture       *string `gorm:"column:picture"`
+	Provider      *string `gorm:"provider"`
+	ProviderID    *string `gorm:"provider_id"`
+	Role          string  `gorm:"column:role;not null"`
+	Password      string  `gorm:"column:password;not null"`
 
 	Sessions []Session `gorm:"constraint:OnDelete:CASCADE"`
 

@@ -4,9 +4,11 @@ CREATE TABLE users (
   name VARCHAR(100) NOT NULL,
   email VARCHAR(100) NOT NULL,
   password VARCHAR(255) NOT NULL,
-  google_id VARCHAR(255) NOT NULL,
+  provider VARCHAR(50) NULL, -- Google, Apple, etc
+  provider_id VARCHAR(255) NULL,
   email_verified BOOLEAN DEFAULT FALSE,
-  image VARCHAR(255) NULL ,
+  picture VARCHAR(255) NULL ,
+  phone_number VARCHAR(59) NULL,
   role VARCHAR(50) DEFAULT 'USER',
   created_at  BIGINT NOT NULL,
   updated_at  BIGINT NOT NULL,

@@ -4,6 +4,7 @@ import (
 	"gorm.io/gorm"
 	"id.diengs.backend/internal/delivery/http"
 	"id.diengs.backend/internal/delivery/http/route"
+	"id.diengs.backend/internal/delivery/middleware"
 	"id.diengs.backend/internal/pkg"
 	"id.diengs.backend/internal/repository"
 	"id.diengs.backend/internal/usecase"
@@ -27,18 +28,23 @@ func Bootstrap(cfg *BootstrapConfig) {
 	// Repository Config
 	userRepo := repository.NewUserRepo(cfg.Log)
 	emailOtpRepo := repository.NewEmailOtpRepo(cfg.Log)
+	sessionRepo := repository.NewSessionRepo(cfg.Log)
 
 	// Use Case Config
 	healthUseCase := usecase.NewHealthUseCase(cfg.Config)
-	authUseCase := usecase.NewAuthUseCase(cfg.DB, cfg.Log, cfg.Validate, cfg.Mail, userRepo, emailOtpRepo)
+	authUseCase := usecase.NewAuthUseCase(cfg.DB, cfg.Log, cfg.Validate, cfg.Mail, userRepo, emailOtpRepo, sessionRepo, cfg.Config)
 
 	// Controller Config
 	healthController := http.NewHealthController(healthUseCase, cfg.Log)
 	authController := http.NewAuthController(authUseCase, cfg.Log)
 
+	// setup middleware
+	authMiddleware := middleware.NewAuth(authUseCase)
+
 	route.RouteConfig{
 		App:              cfg.App,
 		HealthController: healthController,
 		AuthController:   authController,
+		AuthMiddleware:   authMiddleware,
 	}.Setup()
 }
