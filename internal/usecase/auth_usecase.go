@@ -281,7 +281,7 @@ func (c *AuthUseCase) Verify(ctx context.Context, request *model.VerifyUserReque
 
 	// find user
 	user := new(entity.User)
-	if err := c.UserRepo.FindById(tx, user, session.UserID, "Employee"); err != nil {
+	if err := c.UserRepo.FindById(tx, user, session.UserID); err != nil {
 		c.Log.Warnf("Failed find user by token : %+v", err)
 		return nil, fiber.ErrUnauthorized
 	}

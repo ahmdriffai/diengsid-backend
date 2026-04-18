@@ -7,16 +7,20 @@ import (
 )
 
 type RouteConfig struct {
-	App              *fiber.App
-	HealthController *http.HealthController
-	AuthController   *http.AuthController
-	AuthMiddleware   fiber.Handler
+	App *fiber.App
+	// Middleware
+	AuthMiddleware       fiber.Handler
+	AdminMiddleware      fiber.Handler
+	HealthController     *http.HealthController
+	AuthController       *http.AuthController
+	ExperienceController *http.ExperienceController
 }
 
 func (c RouteConfig) Setup() {
 	c.App.Get("/", c.HealthController.Check)
 	c.App.Get("/api/health", c.HealthController.Check)
 	c.SetupAuth()
+	c.SetupExperience()
 }
 
 func (c RouteConfig) SetupAuth() {
@@ -28,4 +32,12 @@ func (c RouteConfig) SetupAuth() {
 
 	loggedRoute := auth.Group("/", c.AuthMiddleware)
 	loggedRoute.Get("/_current", c.AuthController.Current)
+}
+
+func (c RouteConfig) SetupExperience() {
+	experience := c.App.Group("/api/experiences")
+	experience.Get("/", c.ExperienceController.Search)
+
+	adminRoute := experience.Group("/", c.AuthMiddleware, c.AdminMiddleware)
+	adminRoute.Post("/", c.ExperienceController.Create)
 }

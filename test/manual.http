@@ -1,0 +1,24 @@
+POST http://localhost:8088/api/experiences/
+Content-Type: application/json
+Authorization: Bearer your_admin_token_here
+
+{
+  "experience_type": "tour",
+  "title": "Paket Sunrise Dieng",
+  "address": "Dieng Kulon, Batur, Banjarnegara, Jawa Tengah",
+  "description": "Paket wisata sunrise dengan guide lokal, spot foto, dan dokumentasi sederhana.",
+  "thumbnail_url": "https://example.com/images/experiences/dieng-sunrise-thumb.jpg",
+  "lat": -7.2092,
+  "lng": 109.9068,
+  "base_price": 150000,
+  "images": [
+    {
+      "image_url": "https://example.com/images/experiences/dieng-sunrise-1.jpg",
+      "is_primary": true
+    },
+    {
+      "image_url": "https://example.com/images/experiences/dieng-sunrise-2.jpg",
+      "is_primary": false
+    }
+  ]
+}

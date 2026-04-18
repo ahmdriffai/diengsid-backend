@@ -29,22 +29,29 @@ func Bootstrap(cfg *BootstrapConfig) {
 	userRepo := repository.NewUserRepo(cfg.Log)
 	emailOtpRepo := repository.NewEmailOtpRepo(cfg.Log)
 	sessionRepo := repository.NewSessionRepo(cfg.Log)
+	experienceRepo := repository.NewExperienceRepo(cfg.Log)
+	experienceImageRepo := repository.NewExperienceImageRepo(cfg.Log)
 
 	// Use Case Config
 	healthUseCase := usecase.NewHealthUseCase(cfg.Config)
 	authUseCase := usecase.NewAuthUseCase(cfg.DB, cfg.Log, cfg.Validate, cfg.Mail, userRepo, emailOtpRepo, sessionRepo, cfg.Config)
+	experienceUseCase := usecase.NewExperienceUseCase(cfg.DB, cfg.Log, cfg.Validate, experienceRepo, experienceImageRepo)
 
 	// Controller Config
 	healthController := http.NewHealthController(healthUseCase, cfg.Log)
 	authController := http.NewAuthController(authUseCase, cfg.Log)
+	experienceController := http.NewExperienceController(experienceUseCase, cfg.Log)
 
 	// setup middleware
 	authMiddleware := middleware.NewAuth(authUseCase)
+	adminMiddleware := middleware.NewAdmin()
 
 	route.RouteConfig{
-		App:              cfg.App,
-		HealthController: healthController,
-		AuthController:   authController,
-		AuthMiddleware:   authMiddleware,
+		App:                  cfg.App,
+		AuthMiddleware:       authMiddleware,
+		AdminMiddleware:      adminMiddleware,
+		HealthController:     healthController,
+		AuthController:       authController,
+		ExperienceController: experienceController,
 	}.Setup()
 }
