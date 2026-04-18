@@ -24,8 +24,8 @@ database:
 mail:
   host: smtp.gmail.com
   port: 587
-  username: iddiengs@gmail.com
-  password: "lkpe qqmx degv biip"
+  username:
+  password:
 
 googe:
-  clientId: 314501383101-t83bulhqb5ugib4s57t5hepheqt2rdgo.apps.googleusercontent.com
+  clientId:
