@@ -57,7 +57,7 @@ jobs:
           elif [[ "${GITHUB_REF_NAME}" == "test" ]]; then
             echo "ENV=test" >> $GITHUB_OUTPUT
           elif [[ "${GITHUB_REF_NAME}" == "main" ]]; then
-            echo "ENV=prod" >> $GITHUB_OUTPUT
+            echo "ENV=production" >> $GITHUB_OUTPUT
           fi
 
       - name: Build Docker Image
