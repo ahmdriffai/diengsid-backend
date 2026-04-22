@@ -1,2 +1,3 @@
 DROP TABLE IF EXISTS properties;
 DROP TABLE IF EXISTS host_profiles;
+DROP TABLE IF EXISTS rentables;

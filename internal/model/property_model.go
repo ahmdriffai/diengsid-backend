@@ -1,5 +1,45 @@
 package model
 
-type Proper struct {
-  
+import (
+	"id.diengs.backend/internal/entity"
+)
+
+type PropertyResponse struct {
+	ID           string              `json:"id"`
+	Experience   ExperienceResponse  `json:"experience,omitempty"`
+	Host         HostProfileResponse `json:"host,omitempty"`
+	PropertyType string              `json:"property_type"`
+	BookingType  string              `json:"booking_type"`
+	CreatedAt    int64               `json:"created_at"`
+	UpdatedAt    int64               `json:"updated_at"`
+}
+
+type PropertyCreateRequest struct {
+	ExperienceID string             `json:"experience_id" validate:"required"`
+	HostID       *string            `json:"host_id,omitempty"`
+	Host         *HostCreateRequest `json:"host,omitempty"`
+	PropertyType string             `json:"property_type"`
+	BookingType  string             `json:"booking_type"`
+}
+
+func PropertyToResponse(property *entity.Property) *PropertyResponse {
+	experience := ExperienceToResponse(&property.Experience)
+	if experience == nil {
+		experience = &ExperienceResponse{}
+	}
+
+	host := HostToResponse(&property.Host)
+	if host == nil {
+		host = &HostProfileResponse{}
+	}
+
+	return &PropertyResponse{
+		ID:           property.ID,
+		Experience:   *experience,
+		Host:         *host,
+		PropertyType: property.PropertyType,
+		BookingType:  property.BookingType,
+		CreatedAt:    property.CreatedAt,
+		UpdatedAt:    property.UpdatedAt,
+	}
 }

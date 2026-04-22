@@ -1,6 +1,6 @@
 services:
   api:
-    image: ghcr.io/ahmdriffai/diengsid-backend:dev
+    image: ghcr.io/ahmdriffai/diengsid-backend:production
     container_name: diengsid-api
     restart: always
     command: sh -c "apk add --no-cache tzdata && ./main"
@@ -13,12 +13,12 @@ services:
     depends_on:
       - database
 
-  frontend:
-    image: ghcr.io/ahmdriffai/diengsid-frontend:dev
-    container_name: diengsid-frontend
+  client:
+    image: ghcr.io/ahmdriffai/diengsid-frontend:production
+    container_name: diengsid-client
     restart: always
     ports:
-      - 5173:5173
+      - 5173:80
     networks:
       - diengsid-net
     volumes:
@@ -26,15 +26,15 @@ services:
 
   cloudflared-api:
     image: cloudflare/cloudflared:latest
-    container_name: diengsid-api-tunnel
+    container_name: diengsid-cloudflared-api
     restart: unless-stopped
     command: tunnel --no-autoupdate run --token xxx
     networks:
       - diengsid-net
 
-  cloudflared-panel:
+  cloudflared-client:
     image: cloudflare/cloudflared:latest
-    container_name: diengsid-panel-tunnel
+    container_name: diengsid-cloudflared-client
     restart: unless-stopped
     command: tunnel --no-autoupdate run --token xxx
     networks:
@@ -52,7 +52,7 @@ services:
     ports:
       - 5432:5432
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - database_data:/var/lib/postgresql/data
     networks:
       - diengsid-net
 

@@ -1,0 +1,19 @@
+## Experience Creation with Host Data
+POST http://localhost:9000/api/properties
+Content-Type: application/json
+Authorization: Bearer your_admin_token_here
+
+{
+  "experience_id": 1,
+  "host": {
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "phone": "+1234567890",
+    "profile_picture_url": "https://example.com/images/hosts/john-doe.jpg",
+    "bio": "Experienced local guide with a passion for sharing the beauty of Dieng.",
+  },
+  "property_type": "hotel",
+  "booking_type": "room"
+}
+
+

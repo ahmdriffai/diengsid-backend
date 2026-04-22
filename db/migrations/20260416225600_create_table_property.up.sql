@@ -8,7 +8,7 @@ CREATE TABLE host_profiles (
     ktp_number VARCHAR(255),
     bio VARCHAR(255),
     created_at BIGINT,
-    updated_at BIGINT,
+    updated_at BIGINT
 );
 
 CREATE TABLE properties (
@@ -16,7 +16,7 @@ CREATE TABLE properties (
     host_id VARCHAR(36) NOT NULL,
     experience_id VARCHAR(36) NOT NULL,
     property_type VARCHAR(20) DEFAULT 'homestay', -- ('hotel','villa','guesthouse','apartment','cabin','homestay')
-    booking_type ENUM('room','unit') -- 🔥 kunci utama
+    booking_type VARCHAR(20), -- 🔥 kunci utama : (room, unit)
     created_at BIGINT,
     updated_at BIGINT,
 
@@ -33,6 +33,20 @@ CREATE TABLE properties (
     -- CONSTRAINT properties_type_check
     --     CHECK (type IN ('homestay', 'villa', 'guesthost'))
     CONSTRAINT properties_booking_type
-         CHECK (type IN ('room', 'unit'))
+         CHECK (booking_type IN ('room', 'unit'))
 );
 
+CREATE TABLE rentables (
+    id VARCHAR(36) PRIMARY KEY,
+    property_id VARCHAR(36) NOT NULL,
+    type VARCHAR(20), -- 🔥 kunci utama : (room, unit)
+    name VARCHAR(255), -- Deluxe Room / Villa A
+    capacity INT,
+    base_price DOUBLE PRECISION NOT NULL,
+    stock INT NOT NULL DEFAULT 1, -- 🔥 pembeda utama
+    created_at BIGINT,
+    updated_at BIGINT,
+
+    CONSTRAINT rentables_type
+         CHECK (type IN ('room', 'unit'))
+)

@@ -12,7 +12,7 @@ type Property struct {
 	HostID       string `gorm:"column:host_id;not null"`
 	ExperienceID string `gorm:"column:experience_id;not null"`
 	PropertyType string `gorm:"column:property_type;default:homestay"`
-	Capacity     int    `gorm:"column:capacity;not null"`
+	BookingType  string `gorm:"column:booking_type"`
 
 	Host       HostProfile `gorm:"foreignKey:HostID;references:ID;constraint:OnDelete:CASCADE"`
 	Experience Experience  `gorm:"foreignKey:ExperienceID;references:ID;constraint:OnDelete:CASCADE"`
@@ -55,4 +55,8 @@ func (h *HostProfile) BeforeCreate(tx *gorm.DB) (err error) {
 	h.CreatedAt = time.Now().UnixMilli()
 	h.UpdatedAt = time.Now().UnixMilli()
 	return nil
+}
+
+type Rentable struct {
+	ID string `gorm:"column:id;primaryKey"`
 }

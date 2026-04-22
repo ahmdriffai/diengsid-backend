@@ -14,6 +14,7 @@ type RouteConfig struct {
 	HealthController     *http.HealthController
 	AuthController       *http.AuthController
 	ExperienceController *http.ExperienceController
+	PropertyController   *http.PropertyController
 }
 
 func (c RouteConfig) Setup() {
@@ -21,6 +22,7 @@ func (c RouteConfig) Setup() {
 	c.App.Get("/api/health", c.HealthController.Check)
 	c.SetupAuth()
 	c.SetupExperience()
+	c.SetupProperty()
 }
 
 func (c RouteConfig) SetupAuth() {
@@ -38,6 +40,14 @@ func (c RouteConfig) SetupExperience() {
 	experience := c.App.Group("/api/experiences")
 	experience.Get("/", c.ExperienceController.Search)
 
-	adminRoute := experience.Group("/", c.AuthMiddleware, c.AdminMiddleware)
+	adminRoute := experience.Group("/")
 	adminRoute.Post("/", c.ExperienceController.Create)
+}
+
+func (c RouteConfig) SetupProperty() {
+	property := c.App.Group("/api/properties")
+	property.Get("/:id", c.PropertyController.GetByID)
+
+	adminRoute := property.Group("/")
+	adminRoute.Post("/", c.PropertyController.Create)
 }

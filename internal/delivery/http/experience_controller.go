@@ -36,10 +36,10 @@ func (c *ExperienceController) Create(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	return ctx.JSON(model.WebResponse[any]{
+	return ctx.JSON(model.WebResponse[model.ExperienceResponse]{
 		Success: true,
 		Message: "success create experience",
-		Data:    response,
+		Data:    *response,
 	})
 }
 
